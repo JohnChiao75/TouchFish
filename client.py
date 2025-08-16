@@ -10,7 +10,7 @@ class ChatClient:
         self.root = tk.Tk()
         self.root.title("聊天客户端")
         self.font_family = ("微软雅黑", 12)
-        self.bell_enabled = True if platform.system() == "Windows" else False
+        self.bell_enabled = False
         
         self.create_connection_window()
         self.root.mainloop()
@@ -50,20 +50,18 @@ class ChatClient:
             self.server_ip = self.ip_entry.get()
             self.port = int(self.port_entry.get())
             self.username = self.user_entry.get()
-            
             if not self.username:
                 messagebox.showerror("错误", "用户名不能为空")
                 return
                 
             self.socket = socket.socket()
             self.socket.connect((self.server_ip, self.port))
-            
             self.root.destroy()  # 关闭连接窗口
             self.create_chat_window()  # 打开聊天窗口
-            
             # 启动消息接收线程
             threading.Thread(target=self.receive_messages, daemon=True).start()
-            
+            # self.receive_messages()
+            self.chat_win.mainloop()
         except Exception as e:
             messagebox.showerror("连接错误", f"无法连接到服务器:\n{str(e)}")
 
@@ -71,7 +69,7 @@ class ChatClient:
         """创建聊天窗口"""
         self.chat_win = tk.Tk()
         self.chat_win.title(f"聊天室 - {self.username}")
-        self.chat_win.geometry("600x400")
+        self.chat_win.geometry(f"600x400")
         
         # 聊天记录框
         self.chat_frame = tk.Frame(self.chat_win)
@@ -109,8 +107,7 @@ class ChatClient:
         setting_btn = tk.Button(self.chat_win, text="设置", command=self.open_settings)
         setting_btn.pack(side="bottom", pady=5)
         
-        self.chat_win.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.chat_win.mainloop()
+
 
     def open_settings(self):
         """打开设置窗口"""
@@ -184,8 +181,6 @@ class ChatClient:
         while True:
             try:
                 message = self.socket.recv(1024).decode("utf-8")
-                if not message:
-                    break
                     
                 # 在GUI线程更新界面
                 self.chat_win.after(0, self.display_message, message)
@@ -195,7 +190,6 @@ class ChatClient:
                     self.play_notification_sound()
                     
             except Exception as e:
-                print(f"接收错误: {str(e)}")
                 break
 
     def display_message(self, message):
